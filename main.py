@@ -458,6 +458,7 @@ class LineupOverlay(QWidget):
         self.items = []
         self.active_idx = -1
         self.progress = 0.0
+             self.target_angles = None
  
         self.pen_normal    = QPen(QColor(0, 255, 255), 2)
         self.pen_ready     = QPen(QColor(0, 255, 0), 2)
@@ -467,11 +468,12 @@ class LineupOverlay(QWidget):
  
         self.font_ui = QFont("Segoe UI", 8, QFont.Bold)
  
-    def update_data(self, items, vm, active_idx, progress):
+        def update_data(self, items, vm, active_idx, progress, target_angles=None):
         self.items = items
         self.view_matrix = vm
         self.active_idx = active_idx
         self.progress = progress
+             self.target_angles = target_angles
         self.update()
  
     def paintEvent(self, event):
@@ -539,6 +541,21 @@ class LineupOverlay(QWidget):
 class LineupThread(QThread):
     overlay_update = pyqtSignal(list, object, int, float)
     status_update  = pyqtSignal(str)
+
+         # Draw aim indicator if target angles are set
+        if self.target_angles and is_active:
+            # Draw a crosshair/arrow showing where to aim
+            painter.setPen(QPen(QColor(255, 255, 0), 3))  # Yellow
+            center_x, center_y = int(w_scr / 2), int(h_scr / 2)
+            # Draw a small cross at screen center
+            cross_size = 20
+            painter.drawLine(center_x - cross_size, center_y, center_x + cross_size, center_y)
+            painter.drawLine(center_x, center_y - cross_size, center_x, center_y + cross_size)
+            # Draw text hint
+            painter.setPen(self.pen_text)
+            hint_text = "Aim here (helper active)"
+            tw_hint = fm.horizontalAdvance(hint_text)
+            painter.drawText(int(center_x - tw_hint/2), center_y + 40, hint_text)
  
     def __init__(self, pm, client, offsets):
         super().__init__()
@@ -702,7 +719,7 @@ class LineupThread(QThread):
                                 if abs(dx) > 0.05 or abs(dy) > 0.05:
                                     win32api.mouse_event(
                                         win32con.MOUSEEVENTF_MOVE,
-                                        int(-dy * 18), int(dx * 18), 0, 0
+                                        int(-dy *418), int(dx * 18), 0, 0
                                     )
                         else:
                             prog = elapsed / 1.5
@@ -710,7 +727,7 @@ class LineupThread(QThread):
                     self.active_idx = -1
                     self.zone_start = 0
  
-                self.overlay_update.emit(visible, view_matrix, overlay_active_idx, prog)
+                self.overlay_update.emit(visible, view_matrix, overlay_active_idx, prog, t_ang if found_active != -1 and elapsed >= 1.5 else None)
  
             except Exception:
                 pass
@@ -788,4 +805,5 @@ if __name__ == "__main__":
         pass
 
     main()
+
 
