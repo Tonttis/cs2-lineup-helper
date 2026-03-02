@@ -576,7 +576,7 @@ class LineupThread(QThread):
  
         def _record_lineup(self, map_name, origin, grenade_type):
             """Record a new lineup at current position"""
-    try:
+            try:
         # Read current view angles
         view_bytes = self.pm.read_bytes(
             self.client + self.offsets['dwViewAngles'], 12
@@ -793,6 +793,7 @@ if __name__ == "__main__":
         pass
 
     main()
+
 
 
 
