@@ -659,7 +659,7 @@ class LineupThread(QThread):
                 held_type = WEAPON_MAP.get(weapon_id, "Unknown")
 
                 if win32api.GetAsyncKeyState(0x75) & 0x8000:
-                    if not hasattr(self, '_f6_pressed'):
+                    if not self._f6_pressed:
                         self._f6_pressed = True
                         self._record_lineup(map_name, pos_np.tolist(), held_type)
                     time.sleep(0.2)  # Debounce
@@ -788,3 +788,4 @@ if __name__ == "__main__":
         pass
 
     main()
+
