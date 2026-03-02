@@ -458,7 +458,7 @@ class LineupOverlay(QWidget):
         self.items = []
         self.active_idx = -1
         self.progress = 0.0
-             self.target_angles = None
+        self.target_angles = None
  
         self.pen_normal    = QPen(QColor(0, 255, 255), 2)
         self.pen_ready     = QPen(QColor(0, 255, 0), 2)
@@ -469,12 +469,12 @@ class LineupOverlay(QWidget):
         self.font_ui = QFont("Segoe UI", 8, QFont.Bold)
  
         def update_data(self, items, vm, active_idx, progress, target_angles=None):
-        self.items = items
-        self.view_matrix = vm
-        self.active_idx = active_idx
-        self.progress = progress
-             self.target_angles = target_angles
-        self.update()
+            self.items = items
+            self.view_matrix = vm
+            self.active_idx = active_idx
+            self.progress = progress
+            self.target_angles = target_angles
+            self.update()
  
     def paintEvent(self, event):
         if self.view_matrix is None or not self.items:
@@ -805,5 +805,4 @@ if __name__ == "__main__":
         pass
 
     main()
-
 
