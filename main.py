@@ -381,16 +381,16 @@ def load_offsets():
  
 def _fallback_offsets():
     return {
-        'dwLocalPlayerPawn':      NaN,
-        'dwViewMatrix':           NaN,
-        'dwViewAngles':           NaN,
-        'dwGlobalVars':           NaN,
-        'm_iTeamNum':             NaN,
-        'm_vOldOrigin':           NaN,
-        'm_pClippingWeapon':      NaN,
-        'm_AttributeManager':     NaN,
-        'm_Item':                 NaN,
-        'm_iItemDefinitionIndex': NaN,
+        'dwLocalPlayerPawn':       0x0,
+        'dwViewMatrix':            0x0,
+        'dwViewAngles':            0x0,
+        'dwGlobalVars':            0x0,
+        'm_iTeamNum':              0x0,
+        'm_vOldOrigin':            0x0,
+        'm_pClippingWeapon':       0x0,
+        'm_AttributeManager':      0x0,
+        'm_Item':                  0x0,
+        'm_iItemDefinitionIndex':  0x0,
     }
  
 class MapReader:
@@ -422,7 +422,9 @@ class MapReader:
             pass
         return None
  
-    @Njit(fastmath=True, cache=True)
+    425
+380
+(fastmath=True, cache=True)
 def world_to_screen_fast(pos_x, pos_y, pos_z, vm, width, height):
     w = pos_x * vm[12] + pos_y * vm[13] + pos_z * vm[14] + vm[15]
     if w < 0.01:
@@ -789,4 +791,5 @@ if __name__ == "__main__":
         ctypes.windll.winmm.timeBeginPeriod(1)
     except:
         pass
+
     main()
