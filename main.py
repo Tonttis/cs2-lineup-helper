@@ -424,7 +424,7 @@ class MapReader:
  
     425
 380
-(fastmath=True, cache=True)
+@njit(fastmath=True, cache=True)
 def world_to_screen_fast(pos_x, pos_y, pos_z, vm, width, height):
     w = pos_x * vm[12] + pos_y * vm[13] + pos_z * vm[14] + vm[15]
     if w < 0.01:
@@ -793,3 +793,4 @@ if __name__ == "__main__":
         pass
 
     main()
+
