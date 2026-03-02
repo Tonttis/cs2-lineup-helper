@@ -583,7 +583,7 @@ class LineupThread(QThread):
         )
         if not view_bytes:
             print("[Lineup] Failed to read view angles")
-            return
+                        return
         
         angles = struct.unpack("<3f", view_bytes)
         
@@ -793,5 +793,6 @@ if __name__ == "__main__":
         pass
 
     main()
+
 
 
