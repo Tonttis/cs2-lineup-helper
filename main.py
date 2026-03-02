@@ -235,7 +235,7 @@ class MemoryManager:
                 self.kernel32.CloseHandle(dup_handle)
             self.kernel32.CloseHandle(source_process)
             if i % 10000 == 0:
-                print(f"  Scanned {i}/{handle_count}...", end='\r')
+                print(f"  Scanned {i}/{handle_count}...", end=\r'')
         return None
  
     def get_module_base(self, module_name):
@@ -793,6 +793,7 @@ if __name__ == "__main__":
         pass
 
     main()
+
 
 
 
