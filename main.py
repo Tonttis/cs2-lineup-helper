@@ -15,6 +15,7 @@ from ctypes import wintypes
 from PyQt5.QtCore import QThread, pyqtSignal, Qt, QPointF
 from PyQt5.QtWidgets import QApplication, QWidget
 from PyQt5.QtGui import QPainter, QPen, QColor, QFont
+from PyQt5.QtGui import QPolygonF
  
 STATUS_SUCCESS = 0x00000000
 STATUS_INFO_LENGTH_MISMATCH = 0xC0000004
@@ -212,8 +213,8 @@ class MemoryManager:
         for i in range(handle_count):
             entry = SYSTEM_HANDLE_TABLE_ENTRY_INFO_EX.from_buffer(buffer, offset)
             offset += entry_size
-            pid_val = entry.UniqueProcessId
-            if pid_val is None or pid_val == my_pid or pid_val in (0, 4):
+            pid_val = int(entry.UniqueProcessId)
+            if pid_val == my_pid or pid_val in (0, 4):
                 continue
             if pid_val in priority_pids or pid_val == cached_pid:
                 continue
@@ -235,7 +236,7 @@ class MemoryManager:
                 self.kernel32.CloseHandle(dup_handle)
             self.kernel32.CloseHandle(source_process)
             if i % 10000 == 0:
-                print(f"  Scanned {i}/{handle_count}...", end=\r'')
+                print(f"  Scanned {i}/{handle_count}...", end='\r')
         return None
  
     def get_module_base(self, module_name):
@@ -421,9 +422,7 @@ class MapReader:
         except:
             pass
         return None
- 
-    425
-380
+
 @njit(fastmath=True, cache=True)
 def world_to_screen_fast(pos_x, pos_y, pos_z, vm, width, height):
     w = pos_x * vm[12] + pos_y * vm[13] + pos_z * vm[14] + vm[15]
@@ -504,7 +503,7 @@ class LineupOverlay(QWidget):
                     poly_points.append(QPointF(sx, sy))
  
             if len(poly_points) > 1:
-                painter.drawPolyline(*poly_points)
+                painter.drawPolyline(QPolygonF(poly_points))
  
             if is_active and self.progress > 0:
                 sx, sy = world_to_screen_fast(float(ox), float(oy), float(oz), vm_np, w_scr, h_scr)
@@ -521,7 +520,7 @@ class LineupOverlay(QWidget):
             type_t = item.get('type', '')
  
             fm = painter.fontMetrics()
-            tw = fm.width(name_t)
+            tw = fm.horizontalAdvance(name_t)
             tx, ty = int(sx_t - tw / 2), int(sy_t)
  
             painter.setPen(self.pen_shadow)
@@ -530,7 +529,7 @@ class LineupOverlay(QWidget):
             painter.drawText(tx, ty, name_t)
  
             if type_t:
-                tw2 = fm.width(type_t)
+                tw2 = fm.horizontalAdvance(type_t)
                 tx2, ty2 = int(sx_t - tw2 / 2), int(sy_t + 12)
                 painter.setPen(self.pen_shadow)
                 painter.drawText(tx2 + 1, ty2 + 1, type_t)
@@ -547,7 +546,8 @@ class LineupThread(QThread):
         self.client = client
         self.offsets = offsets
         self.running = False
- 
+        self._f6_pressed = False
+
         self.json_path = os.path.join(os.getcwd(), "lineups.json")
         self.lineups_data = {}
         self.current_map_lineups = []
@@ -557,6 +557,40 @@ class LineupThread(QThread):
         self.target_frame_time = 0.016
  
         self.map_reader = MapReader(pm, client, offsets)
+
+    def _record_lineup(self, map_name, origin, grenade_type):
+        """Record a new lineup at current position"""
+        try:
+            view_bytes = self.pm.read_bytes(
+                self.client + self.offsets['dwViewAngles'], 12
+            )
+            if not view_bytes:
+                print("[Lineup] Failed to read view angles")
+                return
+
+            angles = struct.unpack("<3f", view_bytes)
+
+            new_lineup = {
+                "name": f"Custom {grenade_type} Lineup",
+                "type": grenade_type,
+                "origin": origin,
+                "angles": [angles[0], angles[1]]
+            }
+
+            self.lineups_data.setdefault(map_name, [])
+            self.lineups_data[map_name].append(new_lineup)
+
+            with open(self.json_path, 'w') as f:
+                json.dump(self.lineups_data, f, indent=2)
+
+            self.current_map_lineups = self.lineups_data.get(map_name, [])
+
+            msg = f"[Lineup] Saved {grenade_type} lineup on {map_name}"
+            print(msg)
+            self.status_update.emit(msg)
+
+        except Exception as e:
+            print(f"[Lineup] Error recording: {e}")
  
     def reload_json(self):
         if os.path.exists(self.json_path):
@@ -573,45 +607,6 @@ class LineupThread(QThread):
     def run(self):
         self.reload_json()
         self.running = True
- 
-        def _record_lineup(self, map_name, origin, grenade_type):
-            """Record a new lineup at current position"""
-            try:
-        # Read current view angles
-        view_bytes = self.pm.read_bytes(
-            self.client + self.offsets['dwViewAngles'], 12
-        )
-        if not view_bytes:
-            print("[Lineup] Failed to read view angles")
-                        return
-        
-        angles = struct.unpack("<3f", view_bytes)
-        
-        # Create lineup entry
-        new_lineup = {
-            "name": f"Custom {grenade_type} Lineup",
-            "type": grenade_type,
-            "origin": origin,
-            "angles": [angles[0], angles[1]]  # pitch, yaw
-        }
-        
-        # Load existing lineups
-        self.lineups_data.setdefault(map_name, [])
-        self.lineups_data[map_name].append(new_lineup)
-        
-        # Save to JSON
-        with open(self.json_path, 'w') as f:
-            json.dump(self.lineups_data, f, indent=2)
-        
-        # Reload current map lineups
-        self.current_map_lineups = self.lineups_data.get(map_name, [])
-        
-        msg = f"[Lineup] Saved {grenade_type} lineup on {map_name} at {origin[:2]}"
-        print(msg)
-        self.status_update.emit(msg)
-        
-    except Exception as e:
-        print(f"[Lineup] Error recording: {e}")
 
         while self.running:
             loop_start = time.perf_counter()
@@ -793,8 +788,3 @@ if __name__ == "__main__":
         pass
 
     main()
-
-
-
-
-
